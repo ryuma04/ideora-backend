@@ -38,3 +38,8 @@ app.listen(PORT, () => {
     console.log(`Backend Server is running on port ${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/api/health`);
 });
+
+//verifying whether the server is running or not
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Ideora Backend Server is running' });
+});
