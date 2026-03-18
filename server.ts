@@ -40,6 +40,6 @@ app.listen(PORT, () => {
 });
 
 //verifying whether the server is running or not
-app.get('/health', (req, res) => {
+app.get('/', (req, res) => {
     res.json({ status: 'ok', message: 'Ideora Backend Server is running' });
 });
