@@ -12,7 +12,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: process.env.DOMAIN || 'http://localhost:3000',
+    origin: process.env.DOMAIN || 'https://ideora-h6ou.vercel.app',
     credentials: true,
 }));
 app.use(express.json());
