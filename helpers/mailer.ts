@@ -94,7 +94,7 @@ export const sendEmail = async ({ email, emailType, userId }: SendEmailParams) =
             })
         });
 
-        const data = await response.json();
+        const data:any = await response.json();
 
         if (!response.ok) {
             console.error("Resend API error:", data);
