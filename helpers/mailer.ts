@@ -84,7 +84,7 @@ export const sendEmail = async ({ email, emailType, userId }: SendEmailParams) =
         // Send via SendGrid
         const msg: any = {
             to: email,
-            from: 'ideorameeting platform@gmail.com',  // Your verified sender email
+            from: 'ideorameetingplatform@gmail.com',  // Your verified sender email
             subject: subject,
             html: html
         };
