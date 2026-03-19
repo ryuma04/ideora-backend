@@ -1,7 +1,9 @@
-// Email helper using Resend HTTP API (works on Render - no SMTP needed)
-
 import User from '@/models/usersModel';
 import crypto from 'crypto';
+import sgMail from '@sendgrid/mail';
+
+// Set SendGrid API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
 
 type SendEmailParams = {
     email: string
@@ -79,33 +81,20 @@ export const sendEmail = async ({ email, emailType, userId }: SendEmailParams) =
             throw new Error("Invalid email type");
         }
 
-        // Send via Resend HTTP API (no SMTP, works on Render)
-        const response = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${process.env.RESEND_MAIL_API}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                from: "Ideora <noreply@resend.dev>",  // For testing
-                to: email,
-                subject: subject,
-                html: html
-            })
-        });
+        // Send via SendGrid
+        const msg: any = {
+            to: email,
+            from: 'ideorameeting platform@gmail.com',  // Your verified sender email
+            subject: subject,
+            html: html
+        };
 
-        const data:any = await response.json();
-
-        if (!response.ok) {
-            console.error("Resend API error:", data);
-            throw new Error(data.message || "Failed to send email");
-        }
-
-        console.log("Email sent successfully via Resend:", data.id);
-        return data;
+        await sgMail.send(msg);
+        console.log('Email sent successfully via SendGrid to:', email);
+        return { success: true };
     }
     catch (error: any) {
-        console.error("Email sending error:", error);
+        console.error('Email sending error:', error);
         throw new Error(error.message);
     }
 }
