@@ -91,7 +91,7 @@ export const finalizeAudio = async (req: Request, res: Response) => {
             ).end(finalBuffer);
         });
 
-        await MeetingResource.findOneAndUpdate(
+        const resource = await MeetingResource.findOneAndUpdate(
             { meetingId: meeting._id },
             {
                 audioRecordingUrl: uploadResult.secure_url,
@@ -100,15 +100,38 @@ export const finalizeAudio = async (req: Request, res: Response) => {
             { upsert: true, new: true }
         );
 
+        // --- Trigger AI MoM Agent ---
+        try {
+            const axios = require('axios');
+            // Use 127.0.0.1 instead of localhost to avoid IPv6 issues
+            const aiServiceUrl = process.env.AI_SERVICE_URL || "http://127.0.0.1:8000/process-meeting";
+            
+            console.log(`Triggering AI Service at ${aiServiceUrl} for meeting ${actualMeetingId}`);
+
+            axios.post(aiServiceUrl, {
+                meetingId: actualMeetingId,
+                audioUrl: uploadResult.secure_url,
+                brainstormingUrl: resource.brainstormingReportUrl || ""
+            }).then(() => {
+                console.log("AI Service triggered successfully");
+            }).catch((err: any) => {
+                console.error("Failed to trigger AI Service:", err.message);
+            });
+        } catch (triggerError) {
+            console.warn("AI Service trigger setup error:", triggerError);
+        }
+        // ---------------------------
+
         for (const file of files) {
             await bucket.delete(file._id);
         }
 
         return res.status(200).json({
             success: true,
-            message: "Audio finalized successfully",
+            message: "Audio finalized successfully and AI processing triggered",
             audioUrl: uploadResult.secure_url
         });
+
 
     } catch (error: any) {
         console.error("[Finalize] ERROR:", error.message);
