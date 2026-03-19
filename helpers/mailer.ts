@@ -1,58 +1,32 @@
-//this is a helper file, used to send the email to the user 
+// Email helper using Resend HTTP API (works on Render - no SMTP needed)
 
-import nodemailer from 'nodemailer';
-import User from '@/backend/models/usersModel';
-import bcryptjs from 'bcryptjs';
+import User from '@/models/usersModel';
 import crypto from 'crypto';
-import { SentMessageInfo } from 'nodemailer';
 
-//email for sending the email to the user
-//emailType to identify whether it is a verify or password reset email
-//user id for generating token
-
-//defining the type of the params ....usual ts shit
 type SendEmailParams = {
     email: string
     emailType: string
     userId: string
 }
+
 export const sendEmail = async ({ email, emailType, userId }: SendEmailParams) => {
     try {
         const hashedToken = crypto.randomBytes(32).toString("hex");
+
         if (emailType === "VERIFY_USER") {
-            //if the email is for user verification then we will update the tokens responsible for user 
-            // verification which we created in the schema
             await User.findByIdAndUpdate(userId, {
                 isVerifyToken: hashedToken,
-                isVerifyTokenExpire: Date.now() + 360000
-            })
+                isVerifyTokenExpire: Date.now() + 3600000 // 1 hour
+            });
         }
         else if (emailType === "RESET_PASSWORD") {
-            //same for reset password also
             await User.findByIdAndUpdate(userId, {
                 forgotPasswordToken: hashedToken,
-                forgotPasswordTokenExpire: Date.now() + 360000
+                forgotPasswordTokenExpire: Date.now() + 3600000 // 1 hour
             });
         }
 
-        var transport = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 587,
-            secure: false,
-            auth: {
-                user: process.env.GMAIL_MAIL,
-                pass: process.env.GMAIL_APP_PASSWORD
-            },
-            tls: {
-                rejectUnauthorized: false
-            },
-            connectionTimeout: 15000,
-            greetingTimeout: 15000,
-            socketTimeout: 20000,
-        });
-
-        // structuring the mail body
-        let mailStructure;
+        // Build email HTML
         const currentYear = new Date().getFullYear();
         const baseStyles = "font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #f4f7fa; padding: 40px 20px; color: #1e293b; line-height: 1.6;";
         const cardStyles = "max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);";
@@ -61,13 +35,13 @@ export const sendEmail = async ({ email, emailType, userId }: SendEmailParams) =
         const buttonStyles = "display: inline-block; background-color: #4f46e5; color: #ffffff !important; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;";
         const footerStyles = "background-color: #f8fafc; padding: 24px 32px; text-align: center; border-top: 1px solid #f1f5f9;";
 
+        let subject: string;
+        let html: string;
+
         if (emailType === "VERIFY_USER") {
             const verifyLink = `${process.env.DOMAIN}/auth/verifyEmail?token=${hashedToken}`;
-            mailStructure = {
-                from: `"Ideora" <${process.env.GMAIL_MAIL}>`,
-                to: email,
-                subject: "Verify your Ideora account",
-                html: `
+            subject = "Verify your Ideora account";
+            html = `
                 <div style="${baseStyles}">
                     <div style="${cardStyles}">
                         <div style="${headerStyles}"><h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 800;">Ideora</h1></div>
@@ -81,16 +55,12 @@ export const sendEmail = async ({ email, emailType, userId }: SendEmailParams) =
                         </div>
                         <div style="${footerStyles}"><p style="margin: 0; color: #64748b; font-size: 12px;">&copy; ${currentYear} Ideora. All rights reserved.</p></div>
                     </div>
-                </div>`
-            }
+                </div>`;
         }
         else if (emailType === "RESET_PASSWORD") {
             const resetLink = `${process.env.DOMAIN}/auth/resetPassword?token=${hashedToken}`;
-            mailStructure = {
-                from: `"Ideora Support" <${process.env.GMAIL_MAIL}>`,
-                to: email,
-                subject: "Reset your Ideora password",
-                html: `
+            subject = "Reset your Ideora password";
+            html = `
                 <div style="${baseStyles}">
                     <div style="${cardStyles}">
                         <div style="${headerStyles}"><h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 800;">Ideora</h1></div>
@@ -104,17 +74,38 @@ export const sendEmail = async ({ email, emailType, userId }: SendEmailParams) =
                         </div>
                         <div style="${footerStyles}"><p style="margin: 0; color: #64748b; font-size: 12px;">&copy; ${currentYear} Ideora. All rights reserved.</p></div>
                     </div>
-                </div>`
-            }
+                </div>`;
         } else {
             throw new Error("Invalid email type");
         }
 
-        //sending the mail
-        const mailResponse = await transport.sendMail(mailStructure);
-        return mailResponse;
+        // Send via Resend HTTP API (no SMTP, works on Render)
+        const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.RESEND_MAIL_API}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                from: "Ideora <noreply@resend.dev>",  // For testing
+                to: email,
+                subject: subject,
+                html: html
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("Resend API error:", data);
+            throw new Error(data.message || "Failed to send email");
+        }
+
+        console.log("Email sent successfully via Resend:", data.id);
+        return data;
     }
     catch (error: any) {
+        console.error("Email sending error:", error);
         throw new Error(error.message);
     }
 }
