@@ -7,23 +7,25 @@ const meetingResourcesSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    
+
     //the output doc of the brainstorming
     brainstormingReportUrl: {
-        type: String, 
+        type: String,
         default: ""
     },
 
     //the MOM generated from AI
-    momText: {
+
+
+    momReportUrl: {
         type: String,
-        default: "" // Saved 2 mins after meeting ends by AI
+        default: "" // Cloudinary link to PDF
     },
-    
+
     //the audio of the meeting
     audioRecordingUrl: {
         type: String,
-        default: "" 
+        default: ""
     },
 
     //cloudinary public_id for audio deletion after 6 hours
