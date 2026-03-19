@@ -35,13 +35,17 @@ export const sendEmail = async ({ email, emailType, userId }: SendEmailParams) =
             });
         }
 
-        //mailtrap config for testing will replae it with the actual mail config later
         var transport = nodemailer.createTransport({
-            service: "gmail",
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
             auth: {
                 user: process.env.GMAIL_MAIL,
                 pass: process.env.GMAIL_APP_PASSWORD
-            }
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000,
         });
 
         // structuring the mail body

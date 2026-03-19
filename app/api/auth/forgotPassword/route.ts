@@ -13,11 +13,12 @@ export const forgotPassword = async (req: Request, res: Response) => {
         }
         const user = await User.findOne({ email });
         if (user) {
-            await sendEmail({
+            // Send reset email in background (don't block the response)
+            sendEmail({
                 email: user.email,
                 emailType: "RESET_PASSWORD",
                 userId: (user._id as any).toString()
-            });
+            }).catch(err => console.error("Failed to send reset email:", err));
         }
         return res.status(200).json({
             message: "If an account exist, then reset link has been sent to it"

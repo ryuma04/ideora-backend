@@ -31,11 +31,12 @@ export const signup = async (req: Request, res: Response) => {
         });
         const saved = await newUser.save();
 
-        await sendEmail({
+        // Send verification email in background (don't block the response)
+        sendEmail({
             email: newUser.email,
             emailType: "VERIFY_USER",
             userId: (newUser._id as any).toString()
-        });
+        }).catch(err => console.error("Failed to send verification email:", err));
 
         if (saved) {
             return res.status(200).json({ message: "User entered successfully" });
