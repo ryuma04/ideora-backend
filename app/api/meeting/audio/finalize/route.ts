@@ -112,10 +112,15 @@ export const finalizeAudio = async (req: Request, res: Response) => {
                 meetingId: actualMeetingId,
                 audioUrl: uploadResult.secure_url,
                 brainstormingUrl: resource.brainstormingReportUrl || ""
-            }).then(() => {
+            }).then((response: any) => {
+                console.log("AI Service response:", response.status, response.data);
                 console.log("AI Service triggered successfully");
             }).catch((err: any) => {
-                console.error("Failed to trigger AI Service:", err.message);
+                console.error("Failed to trigger AI Service at URL:", aiServiceUrl);
+                console.error("Error message:", err.message);
+                if (err.response) {
+                    console.error("Error data:", err.response.data);
+                }
             });
         } catch (triggerError) {
             console.warn("AI Service trigger setup error:", triggerError);
