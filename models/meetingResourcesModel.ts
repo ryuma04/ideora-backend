@@ -36,6 +36,6 @@ const meetingResourcesSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-const MeetingResource = mongoose.models.meetingresource || mongoose.model("meetingresource", meetingResourcesSchema, "meetingresource");
+const MeetingResource = mongoose.models.meetingresources || mongoose.model("meetingresources", meetingResourcesSchema, "meetingresources");
 
 export default MeetingResource;
