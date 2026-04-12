@@ -8,7 +8,11 @@ import apiRouter from './app/api/router';
 
 // (dotenv loaded via import)
 
+import path from 'path';
 const app = express();
+
+// Serve static files from the 'public' directory
+app.use('/mom_reports', express.static(path.join(__dirname, 'public/mom_reports')));
 
 // Middleware
 app.use(cors({
