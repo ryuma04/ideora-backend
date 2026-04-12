@@ -109,8 +109,9 @@ export const downloadMoM = async (req: Request, res: Response) => {
 
         const safeFilename = filename ? `${String(filename).replace(/[^a-z0-9]/gi, '_')}.pdf` : 'MOM_Report.pdf';
         
+        const mode = req.query.mode === 'inline' ? 'inline' : 'attachment';
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+        res.setHeader('Content-Disposition', `${mode}; filename="${safeFilename}"`);
 
         response.data.on('error', (err: any) => {
             console.error('Stream error during MoM download:', err);

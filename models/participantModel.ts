@@ -34,6 +34,9 @@ const participantSchema = new mongoose.Schema({
     guestId: {
         type: String, // Unique ID for guest session (e.g. guest-123)
     },
+    email: {
+        type: String, // email to receive the report
+    },
     //set the expire time to 6 hours which will run TTL operation   
     expiresAt: {
         type: Date,
