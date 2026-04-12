@@ -54,9 +54,60 @@ export const getDashboardMOM = async (req: Request, res: Response) => {
             success: true,
             momDocuments
         });
-
     } catch (error: any) {
         console.error("Error fetching MOM documents:", error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+export const getMOMById = async (req: Request, res: Response) => {
+    try {
+        await connect();
+        const userId = getDataFromToken(req);
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const { id } = req.params;
+        console.log(`[DEBUG] getMOMById request for id: ${id} by user: ${userId}`);
+
+        const meeting = await Meeting.findById(id).populate("createdBy", "username email");
+        if (!meeting) {
+            console.log(`[DEBUG] Meeting not found: ${id}`);
+            return res.status(404).json({ error: "Meeting not found" });
+        }
+
+        // Check if user is the Host (Creator) OR a Participant
+        const isHost = meeting.createdBy && (meeting.createdBy._id.toString() === userId || meeting.createdBy.toString() === userId);
+        const participant = await Participant.findOne({ meetingId: id, userId: userId });
+
+        console.log(`[DEBUG] AccessCheck: isHost=${isHost}, participantFound=${!!participant}`);
+
+        if (!isHost && !participant) {
+            return res.status(403).json({ error: "Access Denied: You are not authorized to view this meeting report" });
+        }
+
+        const resource = await MeetingResource.findOne({ meetingId: id });
+        if (!resource || !resource.momReportUrl) {
+            console.log(`[DEBUG] MoM Resource not found for meeting: ${id}`);
+            return res.status(404).json({ error: "MoM report not found for this meeting" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            mom: {
+                _id: meeting._id,
+                title: meeting.title,
+                meetingCode: meeting.meetingCode,
+                endedAt: meeting.endedAt || meeting.createdAt,
+                momUrl: resource.momReportUrl,
+                myRole: participant.role,
+                host: meeting.createdBy
+            }
+        });
+
+    } catch (error: any) {
+        console.error("Error fetching single MOM:", error);
         return res.status(500).json({ error: error.message });
     }
 };
@@ -109,8 +160,9 @@ export const downloadMoM = async (req: Request, res: Response) => {
 
         const safeFilename = filename ? `${String(filename).replace(/[^a-z0-9]/gi, '_')}.pdf` : 'MOM_Report.pdf';
         
+        const mode = req.query.mode === 'inline' ? 'inline' : 'attachment';
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+        res.setHeader('Content-Disposition', `${mode}; filename="${safeFilename}"`);
 
         response.data.on('error', (err: any) => {
             console.error('Stream error during MoM download:', err);

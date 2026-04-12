@@ -32,7 +32,7 @@ import { uploadAvatar } from './dashboard/uploadAvatar/route';
 import { getDashboardMeetingDetails } from './dashboard/meeting/[id]/route';
 import { getDashboardDocuments } from './dashboard/documents/route';
 import { getDocumentDetails } from './dashboard/documents/[id]/route';
-import { getDashboardMOM, downloadMoM } from './dashboard/mom/route';
+import { getDashboardMOM, downloadMoM, getMOMById } from './dashboard/mom/route';
 
 // Brainstorming Handlers
 import { getSwotState, updateSwotState, deleteSwotCache } from './brainstorming/swotAnalysis/route';
@@ -67,6 +67,7 @@ router.get('/dashboard/documents', getDashboardDocuments);
 router.get('/dashboard/documents/:id', getDocumentDetails);
 router.get('/dashboard/mom', getDashboardMOM);
 router.get('/dashboard/mom/download', downloadMoM);
+router.get('/dashboard/mom/:id', getMOMById);
 router.get('/dashboard/meeting/:id', getDashboardMeetingDetails);
 
 // Meeting routes

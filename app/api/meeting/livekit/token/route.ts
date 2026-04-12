@@ -77,6 +77,7 @@ export const getLiveKitToken = async (req: Request, res: Response) => {
                     meetingId: meeting._id,
                     userId: null,
                     name: name,
+                    email: req.query.email || "", // Capture guest email from query if provided
                     role: "attendee",
                     joinedAt: Date.now(),
                     isGuest: true,
@@ -102,6 +103,7 @@ export const getLiveKitToken = async (req: Request, res: Response) => {
                     meetingId: meeting._id,
                     userId: user._id,
                     name: name,
+                    email: user.email, // Registered user's email
                     role: isHost ? "host" : "attendee",
                     joinedAt: Date.now(),
                     status: (meeting.isWaitingRoomEnabled && !isHost) ? "waiting" : "admitted"
