@@ -32,6 +32,7 @@ export const signup = async (req: Request, res: Response) => {
         const saved = await newUser.save();
 
         // Send verification email in background (don't block the response)
+        console.log("Code reached here");
         sendEmail({
             email: newUser.email,
             emailType: "VERIFY_USER",

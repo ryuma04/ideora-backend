@@ -1,9 +1,5 @@
 import User from '@/models/usersModel';
 import crypto from 'crypto';
-import sgMail from '@sendgrid/mail';
-
-// Set SendGrid API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
 
 type SendEmailParams = {
     email: string
@@ -81,16 +77,39 @@ export const sendEmail = async ({ email, emailType, userId }: SendEmailParams) =
             throw new Error("Invalid email type");
         }
 
-        // Send via SendGrid
-        const msg: any = {
-            to: email,
-            from: 'ideorameetingplatform@gmail.com',  // Your verified sender email
-            subject: subject,
-            html: html
-        };
+        // Send via Google Apps Script proxy
+        const proxyUrl = process.env.GMAIL_PROXY_URL;
+        console.log('Sending email via proxy:', proxyUrl);
+        console.log('Payload:', { to: email, subject });
 
-        await sgMail.send(msg);
-        console.log('Email sent successfully via SendGrid to:', email);
+        const response = await fetch(proxyUrl!, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            redirect: 'follow',
+            body: JSON.stringify({
+                token: 'ideora_secret',
+                to: email,
+                subject: subject,
+                body: html
+            })
+        });
+
+        const responseText = await response.text();
+        console.log('Proxy response status:', response.status);
+        console.log('Proxy response body:', responseText);
+
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch {
+            throw new Error(`Proxy returned non-JSON response: ${responseText.substring(0, 200)}`);
+        }
+
+        if (result.result !== 'success') {
+            throw new Error(result.error || 'Google Apps Script proxy returned failure');
+        }
+
+        console.log('Email sent successfully via Google Apps Script to:', email);
         return { success: true };
     }
     catch (error: any) {

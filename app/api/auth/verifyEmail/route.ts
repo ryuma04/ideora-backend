@@ -4,6 +4,7 @@ import User from "@/backend/models/usersModel";
 
 export const verifyEmail = async (req: Request, res: Response) => {
     try {
+        console.log("verifyEmail route hit");
         await connect();
         const { token } = req.body;
 
