@@ -54,9 +54,53 @@ export const getDashboardMOM = async (req: Request, res: Response) => {
             success: true,
             momDocuments
         });
-
     } catch (error: any) {
         console.error("Error fetching MOM documents:", error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+export const getMOMById = async (req: Request, res: Response) => {
+    try {
+        await connect();
+        const userId = getDataFromToken(req);
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const { id } = req.params;
+
+        // Verify the user is a participant or host of this meeting
+        const participant = await Participant.findOne({ meetingId: id, userId: userId });
+        if (!participant) {
+            return res.status(403).json({ error: "Access Denied: You are not a participant of this meeting" });
+        }
+
+        const meeting = await Meeting.findById(id).populate("createdBy", "username email");
+        if (!meeting) {
+            return res.status(404).json({ error: "Meeting not found" });
+        }
+
+        const resource = await MeetingResource.findOne({ meetingId: id });
+        if (!resource || !resource.momReportUrl) {
+            return res.status(404).json({ error: "MoM report not found for this meeting" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            mom: {
+                _id: meeting._id,
+                title: meeting.title,
+                meetingCode: meeting.meetingCode,
+                endedAt: meeting.endedAt || meeting.createdAt,
+                momUrl: resource.momReportUrl,
+                myRole: participant.role,
+                host: meeting.createdBy
+            }
+        });
+
+    } catch (error: any) {
+        console.error("Error fetching single MOM:", error);
         return res.status(500).json({ error: error.message });
     }
 };
