@@ -69,20 +69,27 @@ export const getMOMById = async (req: Request, res: Response) => {
         }
 
         const { id } = req.params;
-
-        // Verify the user is a participant or host of this meeting
-        const participant = await Participant.findOne({ meetingId: id, userId: userId });
-        if (!participant) {
-            return res.status(403).json({ error: "Access Denied: You are not a participant of this meeting" });
-        }
+        console.log(`[DEBUG] getMOMById request for id: ${id} by user: ${userId}`);
 
         const meeting = await Meeting.findById(id).populate("createdBy", "username email");
         if (!meeting) {
+            console.log(`[DEBUG] Meeting not found: ${id}`);
             return res.status(404).json({ error: "Meeting not found" });
+        }
+
+        // Check if user is the Host (Creator) OR a Participant
+        const isHost = meeting.createdBy && (meeting.createdBy._id.toString() === userId || meeting.createdBy.toString() === userId);
+        const participant = await Participant.findOne({ meetingId: id, userId: userId });
+
+        console.log(`[DEBUG] AccessCheck: isHost=${isHost}, participantFound=${!!participant}`);
+
+        if (!isHost && !participant) {
+            return res.status(403).json({ error: "Access Denied: You are not authorized to view this meeting report" });
         }
 
         const resource = await MeetingResource.findOne({ meetingId: id });
         if (!resource || !resource.momReportUrl) {
+            console.log(`[DEBUG] MoM Resource not found for meeting: ${id}`);
             return res.status(404).json({ error: "MoM report not found for this meeting" });
         }
 
