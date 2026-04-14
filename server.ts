@@ -38,8 +38,22 @@ app.use('/api', apiRouter);
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Backend Server is running on port ${PORT}`);
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import { setupSocketHandlers } from './socketHandler';
+
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+    cors: {
+        origin: process.env.DOMAIN || 'http://localhost:3000',
+        credentials: true,
+    }
+});
+
+setupSocketHandlers(io);
+
+httpServer.listen(PORT, () => {
+    console.log(`Backend Server with Socket.io is running on port ${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/api/health`);
 });
 
