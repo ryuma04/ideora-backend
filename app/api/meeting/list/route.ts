@@ -21,7 +21,13 @@ export const listMeetings = async (req: Request, res: Response) => {
         // Ensure Meeting model is registered
         await Meeting.findOne().limit(1);
 
-        const participantEntries = await Participant.find({ userId: userId }).populate("meetingId");
+        const participantEntries = await Participant.find({ userId: userId }).populate({
+            path: "meetingId",
+            populate: {
+                path: "createdBy",
+                select: "username"
+            }
+        });
 
         const meetingsProp = await Promise.all(participantEntries.map(async (entry: any) => {
             const meeting = entry.meetingId;
@@ -41,7 +47,9 @@ export const listMeetings = async (req: Request, res: Response) => {
                 createdAt: meeting.createdAt,
                 startTime: meeting.startTime,
                 status: meeting.status,
-                myRole: entry.role
+                myRole: entry.role,
+                description: meeting.description || "",
+                host: meeting.createdBy?.username || "Unknown"
             };
         }));
 
