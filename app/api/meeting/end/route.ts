@@ -4,6 +4,7 @@ import connect from "@/backend/dbConfig/dbConfig";
 import Meeting from "@/backend/models/meetingModel";
 import Participant from "@/backend/models/participantModel";
 import { RoomServiceClient } from "livekit-server-sdk";
+import redisClient from "@/backend/dbConfig/redisDbConfig";
 
 export const endMeeting = async (req: Request, res: Response) => {
     try {
@@ -41,6 +42,25 @@ export const endMeeting = async (req: Request, res: Response) => {
             { meetingId: meeting._id, leftAt: { $exists: false } },
             { $set: { leftAt: Date.now() } }
         );
+
+        // Clear Redis cache to free up memory immediately
+        if (redisClient.isOpen) {
+            try {
+                const actualMeetingId = meeting._id.toString();
+                await redisClient.del(`canvas:${actualMeetingId}`);
+                await redisClient.del(`mindmapping:${actualMeetingId}`);
+                await redisClient.del(`stickyNotes:${actualMeetingId}`);
+                await redisClient.del(`swot:${actualMeetingId}`);
+                
+                // Also clear by meetingCode just in case any keys were saved that way
+                await redisClient.del(`canvas:${meeting.meetingCode}`);
+                await redisClient.del(`mindmapping:${meeting.meetingCode}`);
+                await redisClient.del(`stickyNotes:${meeting.meetingCode}`);
+                await redisClient.del(`swot:${meeting.meetingCode}`);
+            } catch (redisError) {
+                console.warn("Failed to clear Redis cache on meeting end:", redisError);
+            }
+        }
 
         const roomService = new RoomServiceClient(
             process.env.NEXT_PUBLIC_LIVEKIT_URL || "",

@@ -9,7 +9,7 @@ import Participant from "@/backend/models/participantModel";
 export const getLiveKitToken = async (req: Request, res: Response) => {
     try {
         await connect();
-        
+
         // Authenticate User (or treat as Guest)
         let user: any = null;
         try {

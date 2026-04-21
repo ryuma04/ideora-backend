@@ -17,7 +17,7 @@ app.use('/mom_reports', express.static(path.join(__dirname, 'public/mom_reports'
 // Middleware
 app.use(cors({
     origin: process.env.DOMAIN || 'https://ideora-h6ou.vercel.app',
-    credentials: true,
+    credentials: true,//for sending and recieving cookies 
 }));
 app.use(express.json());
 app.use(cookieParser());

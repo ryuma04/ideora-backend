@@ -105,7 +105,7 @@ export const finalizeAudio = async (req: Request, res: Response) => {
             const axios = require('axios');
             // Use 127.0.0.1 instead of localhost to avoid IPv6 issues
             const aiServiceUrl = process.env.AI_SERVICE_URL || "http://127.0.0.1:8000/process-meeting";
-            
+
             console.log(`Triggering AI Service at ${aiServiceUrl} for meeting ${actualMeetingId}`);
 
             axios.post(aiServiceUrl, {
